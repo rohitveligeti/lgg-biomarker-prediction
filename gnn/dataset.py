@@ -11,7 +11,7 @@ import pandas
 
 def get_patient_data():
     
-    raw_patient_data = pandas.read_csv('nationwidechildrens.org_clinical_patient_lgg.txt', delimiter='\t', index_col=1, header=1)
+    raw_patient_data = pandas.read_csv('clinical.txt', delimiter='\t', index_col=1, header=1)
     raw_patient_data = raw_patient_data.drop(['CDE_ID:2003301'], axis=0)
 
     # We use the next command to filter for the patient information we care about because it is a dependent variable or we need to control for it
@@ -178,13 +178,10 @@ def get_followup_data():
 
 # This function aggregates all the previous functions' outcomes
 
-def aggregrate(armlevel_filter=None, cna_filter=None, mutation_filter=None, cna_cutoff=10, mutation_cutoff=10):
-
-    patient_data = get_patient_data()
-    hypoxia_data = get_hypoxia_data()
+def aggregrate(armlevel_filter=None, cna_filter=None, mutation_filter=None, cna_cutoff=50, mutation_cutoff=2):
 
     armlevel_cna_data = get_armlevel_cna_data(armlevel_filter)
-    armlevel_cna_data = armlevel_cna_data.add_prefix("ALT_ARM")
+    armlevel_cna_data = armlevel_cna_data.add_prefix("ALT_ARM_")
 
     cna_data = get_cna_data(filter=cna_filter, frequency_cutoff=cna_cutoff)
     cna_data = cna_data.add_prefix("ALT_CNA_")
@@ -193,17 +190,13 @@ def aggregrate(armlevel_filter=None, cna_filter=None, mutation_filter=None, cna_
     mutation_data = mutation_data.add_prefix("ALT_MUT_")
     follow_up_data = get_followup_data()
 
-    patient_set = set(patient_data.index.values.tolist())
-    hypoxia_set = set(hypoxia_data.index.values.tolist())
     armlevel_cna_set = set(armlevel_cna_data.index.values.tolist())
     cna_set = set(cna_data.index.values.tolist())
     mutation_set = set(mutation_data.index.values.tolist())
     follow_up_set = set(follow_up_data.index.values.tolist())
 
-    mega_intersect = list(patient_set.intersection(hypoxia_set).intersection(armlevel_cna_set).intersection(cna_set).intersection(mutation_set).intersection(follow_up_set))
-    
-    patient_data = patient_data.loc[mega_intersect]
-    hypoxia_data = hypoxia_data.loc[mega_intersect]
+    mega_intersect = list(armlevel_cna_set.intersection(cna_set).intersection(mutation_set).intersection(follow_up_set))
+
     armlevel_cna_data = armlevel_cna_data.loc[mega_intersect]
     cna_data = cna_data.loc[mega_intersect]
     mutation_data = mutation_data.loc[mega_intersect]
@@ -213,7 +206,7 @@ def aggregrate(armlevel_filter=None, cna_filter=None, mutation_filter=None, cna_
     follow_up_data = follow_up_data.drop_duplicates(subset='bcr_patient_barcode')
     follow_up_data = follow_up_data.set_index('bcr_patient_barcode')
 
-    ndf = pandas.concat([patient_data, hypoxia_data, armlevel_cna_data, cna_data, mutation_data], axis=1)
+    ndf = pandas.concat([armlevel_cna_data, cna_data, mutation_data], axis=1)
 
 
 
